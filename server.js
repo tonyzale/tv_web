@@ -3,8 +3,8 @@ const http = require('http');
 const hostname = '192.168.1.201';
 const port = 1337;
 
-var sqlite3 = require('sqlite3').verbose();
-var db = new sqlite3.Database('/home/tonyzale/.local/share/me-tv/me-tv.db');
+var sqlite3 = require('sqlite3'); //.verbose();
+var db = new sqlite3.Database('./me-tv.db');
 
 
 const tables = ['scheduled_recording', 'channel'];
