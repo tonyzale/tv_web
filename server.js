@@ -20,26 +20,18 @@ function channelMapPage(res) {
     res.end();
 }
 
-function timeConverter(timestamp) {
-  var a = new Date(timestamp * 1000);
-  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var year = a.getFullYear();
-  var month = months[a.getMonth()];
-  var date = a.getDate();
-  var hour = a.getHours();
-  var min = ("0" + a.getMinutes()).substr(-2);
-  var sec = ("0" + a.getSeconds()).substr(-2);
-  var time = date + ' ' + month + ' ' + year + ' ' + hour + ':' + min + ':' + sec ;
-  return time;
+function timeStr(timestamp) {
+  var date = new Date(timestamp * 1000);
+  return date.toString();
 }
 
 function recordPage(res) {
-    res.write("<body><table>");
+    res.write("<body><table><tr><th>Name</th><th>Channel</th><th>Start Time</th><th>End Time</th></tr>");
     var db = new sqlite3.Database(dbPath);
     db.serialize(function () {
         db.each('SELECT description,channel_id,start_time,duration FROM scheduled_recording', (err, row) => {
-            var startTime = timeConverter(row.start_time);
-            var endTime = timeConverter(row.start_time + row.duration);
+            var startTime = timeStr(row.start_time);
+            var endTime = timeStr(row.start_time + row.duration);
             res.write(`<tr><td>${row.description}</td><td>${channelIndexToName[row.channel_id]}</td><td>${startTime}</td><td>${endTime}</td></tr>`);
         });
         db.close(() => {
