@@ -13,7 +13,7 @@ var channelIndexToName = {};
 
 function channelMapPage(res) {
     res.write("<body><table>");
-    for (var name in channels) {
+    for (var name in channelNameToIndex) {
         res.write(`<tr><td>${name}</td><td>${channelNameToIndex[name]}</td></tr>`);
     }
     res.write("</table></body>");
