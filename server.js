@@ -50,7 +50,6 @@ function recordingDebugPage(res) {
         db.each('SELECT * FROM scheduled_recording', (err, row) => {
             if (first) {
                 columns = Object.keys(row);
-                console.log("%s\n%s", columns, row);
                 res.write('<body><table><tr>');
                 columns.forEach((v) => {res.write(`<th>${v}</th>`)});
                 res.write('</tr>');
