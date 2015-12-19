@@ -6,7 +6,8 @@ const dbPath = './me-tv.db';
 
 var urlMap = {
     'channels' : channelMapPage,
-    'record' : recordPage
+    'record' : recordPage,
+    'debugrecord' : recordingDebugPage,
 };
 var channelNameToIndex = {};
 var channelIndexToName = {};
@@ -33,6 +34,31 @@ function recordPage(res) {
             var startTime = timeStr(row.start_time);
             var endTime = timeStr(row.start_time + row.duration);
             res.write(`<tr><td>${row.description}</td><td>${channelIndexToName[row.channel_id]}</td><td>${startTime}</td><td>${endTime}</td></tr>`);
+        });
+        db.close(() => {
+            res.write('</table></body>');
+            res.end();            
+        });
+    });
+}
+
+function recordingDebugPage(res) {
+    var db = new sqlite3.Database(dbPath);
+    db.serialize(() => {
+        var first = true;
+        var columns = [];
+        db.each('SELECT * FROM scheduled_recording', (err, row) => {
+            if (first) {
+                columns = Object.keys(row);
+                console.log("%s\n%s", columns, row);
+                res.write('<body><table><tr>');
+                columns.forEach((v) => {res.write(`<th>${v}</th>`)});
+                res.write('</tr>');
+                first = false;
+            }
+            res.write('<tr>');
+            columns.forEach((v) => {res.write(`<td>${row[v]}</td>`)});
+            res.write('</tr>');
         });
         db.close(() => {
             res.write('</table></body>');
