@@ -18,6 +18,14 @@ db.serialize(function () {
     });
     db.close();
 });
+app.get('/', (req, res) => {
+   res.write('<body>');
+   res.write('<div><a href="/record">record</a></div>');
+   res.write('<div><a href="/channels">channels</a></div>');
+   res.write('<div><a href="/viewtable">view table</a></div>');
+   res.write('</body>');
+   res.end(); 
+});
 
 app.get('/channels', channelMapPage);
 app.get('/record', recordPage);
