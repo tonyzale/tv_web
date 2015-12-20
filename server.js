@@ -21,7 +21,35 @@ db.serialize(function () {
 
 app.get('/channels', channelMapPage);
 app.get('/record', recordPage);
-app.get('/debugrecord', debugTablePage);
+app.get('/viewtable', (req, res) => {
+    const name = req.query.name || 'scheduled_recording';
+    var db = new sqlite3.Database(dbPath);
+    db.serialize(() => {
+        var first = true;
+        var columns = [];
+        db.each(`SELECT * FROM ${name}`, (err, row) => {
+            if (err) {
+                console.log('Error: %s', err);
+                res.status(400);
+                return;
+            }
+            if (first) {
+                columns = Object.keys(row);
+                res.write('<body><table><tr>');
+                columns.forEach((v) => {res.write(`<th>${v}</th>`)});
+                res.write('</tr>');
+                first = false;
+            }
+            res.write('<tr>');
+            columns.forEach((v) => {res.write(`<td>${row[v]}</td>`)});
+            res.write('</tr>');
+        });
+        db.close(() => {
+            res.write('</table></body>');
+            res.end();            
+        });
+    });
+});
 
 var server = app.listen(port, function() {
    console.log('TV web listening at http://%s:%s', server.address().address, server.address().port); 
@@ -64,30 +92,6 @@ function recordPage(req, res) {
             res.write('<div><label>Start Time</label><input type="datetime" id="starttime" /></div>');
             res.write('<div><label>End Time</label><input type="datetime" id="endtime" /></div>');
             res.write('</div></form></body>');
-            res.end();            
-        });
-    });
-}
-
-function debugTablePage(req, res) {
-    var db = new sqlite3.Database(dbPath);
-    db.serialize(() => {
-        var first = true;
-        var columns = [];
-        db.each('SELECT * FROM scheduled_recording', (err, row) => {
-            if (first) {
-                columns = Object.keys(row);
-                res.write('<body><table><tr>');
-                columns.forEach((v) => {res.write(`<th>${v}</th>`)});
-                res.write('</tr>');
-                first = false;
-            }
-            res.write('<tr>');
-            columns.forEach((v) => {res.write(`<td>${row[v]}</td>`)});
-            res.write('</tr>');
-        });
-        db.close(() => {
-            res.write('</table></body>');
             res.end();            
         });
     });
