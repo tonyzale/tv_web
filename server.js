@@ -12,7 +12,7 @@ var urlMap = {
 var channelNameToIndex = {};
 var channelIndexToName = {};
 
-function channelMapPage(res) {
+function channelMapPage(req, res) {
     res.write("<body><table>");
     for (var name in channelNameToIndex) {
         res.write(`<tr><td>${name}</td><td>${channelNameToIndex[name]}</td></tr>`);
@@ -26,7 +26,7 @@ function timeStr(timestamp) {
   return date.toString();
 }
 
-function recordPage(res) {
+function recordPage(req, res) {
     res.write("<body><table><tr><th>Name</th><th>Channel</th><th>Start Time</th><th>End Time</th></tr>");
     var db = new sqlite3.Database(dbPath);
     db.serialize(function () {
@@ -36,13 +36,24 @@ function recordPage(res) {
             res.write(`<tr><td>${row.description}</td><td>${channelIndexToName[row.channel_id]}</td><td>${startTime}</td><td>${endTime}</td></tr>`);
         });
         db.close(() => {
-            res.write('</table></body>');
+            res.write('</table>');
+            res.write('<form action="/add-recording" method="post">');
+            res.write('<div>');
+            res.write('<div><label>Recording Name</label><input type="text" id="name" /></div>');
+            res.write('<div><label>Channel</label><select id="channel">');
+            Object.keys(channelNameToIndex).forEach((v)=> {
+                res.write(`<option value=${channelNameToIndex[v]}>${v}</option>`);
+            });
+            res.write('</select></div>');
+            res.write('<div><label>Start Time</label><input type="datetime" id="starttime" /></div>');
+            res.write('<div><label>End Time</label><input type="datetime" id="endtime" /></div>');
+            res.write('</div></form></body>');
             res.end();            
         });
     });
 }
 
-function recordingDebugPage(res) {
+function debugTablePage(req, res) {
     var db = new sqlite3.Database(dbPath);
     db.serialize(() => {
         var first = true;
@@ -67,17 +78,17 @@ function recordingDebugPage(res) {
 }
 
 http.createServer((req, res) => {
-    var renderFunc = urlMap[req.url.substr(1)];
+    var renderFunc = urlMap[req.url.substr(1).split('?')[0]];
+    console.log(req.url);
     if (!renderFunc) {
         res.writeHead(404, "Unknown Page");
         res.end();
         return;
     } else {
-        console.log(req.url);
-        res.writeHead(200, {
+       res.writeHead(200, {
             'Content-Type': 'text/html'
         });
-        renderFunc(res);
+        renderFunc(req, res);
     }
 }).listen(port, hostname, () => {
     var db = new sqlite3.Database(dbPath);
