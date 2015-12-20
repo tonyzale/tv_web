@@ -1,16 +1,32 @@
 const http = require('http');
 const sqlite3 = require('sqlite3');
+const express = require('express');
+var app = express();
 const hostname = '127.0.0.1';
 const port = 1337;
 const dbPath = './me-tv.db';
 
-var urlMap = {
-    'channels' : channelMapPage,
-    'record' : recordPage,
-    'debugrecord' : recordingDebugPage,
-};
+
 var channelNameToIndex = {};
 var channelIndexToName = {};
+
+var db = new sqlite3.Database(dbPath);
+db.serialize(function () {
+    db.each('SELECT channel_id, name FROM channel', (err, row) => {
+        channelNameToIndex[row.name] = row.channel_id;
+        channelIndexToName[row.channel_id] = row.name;
+    });
+    db.close();
+});
+
+app.get('/channels', channelMapPage);
+app.get('/record', recordPage);
+app.get('/debugrecord', debugTablePage);
+
+var server = app.listen(port, function() {
+   console.log('TV web listening at http://%s:%s', server.address().address, server.address().port); 
+});
+
 
 function channelMapPage(req, res) {
     res.write("<body><table>");
@@ -76,28 +92,3 @@ function debugTablePage(req, res) {
         });
     });
 }
-
-http.createServer((req, res) => {
-    var renderFunc = urlMap[req.url.substr(1).split('?')[0]];
-    console.log(req.url);
-    if (!renderFunc) {
-        res.writeHead(404, "Unknown Page");
-        res.end();
-        return;
-    } else {
-       res.writeHead(200, {
-            'Content-Type': 'text/html'
-        });
-        renderFunc(req, res);
-    }
-}).listen(port, hostname, () => {
-    var db = new sqlite3.Database(dbPath);
-    db.serialize(function() {
-        db.each('SELECT channel_id, name FROM channel', (err, row) => {
-            channelNameToIndex[row.name] = row.channel_id;
-            channelIndexToName[row.channel_id] = row.name;
-        });
-        db.close();
-    });
-    console.log(`Server running at http://${hostname}:${port}/`);
-});
