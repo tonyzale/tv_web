@@ -1,8 +1,9 @@
 const http = require('http');
 const sqlite3 = require('sqlite3');
 const express = require('express');
+const bodyParser = require('body-parser');
 var app = express();
-const hostname = '127.0.0.1';
+app.use(bodyParser.urlencoded({ extended: false }));
 const port = 1337;
 const dbPath = './me-tv.db';
 
@@ -28,7 +29,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/channels', channelMapPage);
-app.get('/record', recordPage);
+app.get('/record', recordPage)
+app.post('/record', (req, res) => {
+   console.log(req.body);
+   res.end();
+});
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
     var db = new sqlite3.Database(dbPath);
@@ -89,16 +94,17 @@ function recordPage(req, res) {
         });
         db.close(() => {
             res.write('</table>');
-            res.write('<form action="/add-recording" method="post">');
+            res.write('<form action="/record" method="post">');
             res.write('<div>');
-            res.write('<div><label>Recording Name</label><input type="text" id="name" /></div>');
-            res.write('<div><label>Channel</label><select id="channel">');
+            res.write('<div><label>Recording Name</label><input type="text" id="name" name="name"/></div>');
+            res.write('<div><label>Channel</label><select id="channel" name="channel">');
             Object.keys(channelNameToIndex).forEach((v)=> {
                 res.write(`<option value=${channelNameToIndex[v]}>${v}</option>`);
             });
             res.write('</select></div>');
-            res.write('<div><label>Start Time</label><input type="datetime" id="starttime" /></div>');
-            res.write('<div><label>End Time</label><input type="datetime" id="endtime" /></div>');
+            res.write('<div><label>Start Time</label><input type="datetime" name="start"/></div>');
+            res.write('<div><label>Length</label><input type="datetime" name="length" /> minutes</div>');
+            res.write('<div><button type="submit">Record</button></div>')
             res.write('</div></form></body>');
             res.end();            
         });
