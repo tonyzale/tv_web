@@ -1,0 +1,1 @@
+jQuery("#starttime").datetimepicker({/*format:"unixtime",*/ step:30, minDate:0, inline:true});

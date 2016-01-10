@@ -19,20 +19,24 @@ db.serialize(function () {
     });
     db.close();
 });
+
+app.use(express.static('static'));
+
 app.get('/', (req, res) => {
-   res.write('<body>');
-   res.write('<div><a href="/record">record</a></div>');
-   res.write('<div><a href="/channels">channels</a></div>');
-   res.write('<div><a href="/viewtable">view table</a></div>');
-   res.write('</body>');
-   res.end(); 
+    res.write('<body>');
+    res.write('<div><a href="/record">record</a></div>');
+    res.write('<div><a href="/channels">channels</a></div>');
+    res.write('<div><a href="/viewtable">view table</a></div>');
+    res.write('</body>');
+    res.end();
 });
 
 app.get('/channels', channelMapPage);
 app.get('/record', recordPage);
 app.post('/record', (req, res) => {
-   console.log(req.body);
-   res.redirect('/record');
+    console.log(req.body);
+    console.log(Date.parse(req.body['starttime']));
+    res.redirect('/record');
 });
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
@@ -49,23 +53,23 @@ app.get('/viewtable', (req, res) => {
             if (first) {
                 columns = Object.keys(row);
                 res.write('<body><table><tr>');
-                columns.forEach((v) => {res.write(`<th>${v}</th>`)});
+                columns.forEach((v) => { res.write(`<th>${v}</th>`) });
                 res.write('</tr>');
                 first = false;
             }
             res.write('<tr>');
-            columns.forEach((v) => {res.write(`<td>${row[v]}</td>`)});
+            columns.forEach((v) => { res.write(`<td>${row[v]}</td>`) });
             res.write('</tr>');
         });
         db.close(() => {
             res.write('</table></body>');
-            res.end();            
+            res.end();
         });
     });
 });
 
-var server = app.listen(port, function() {
-   console.log('TV web listening at http://%s:%s', server.address().address, server.address().port); 
+var server = app.listen(port, function () {
+    console.log('TV web listening at http://%s:%s', server.address().address, server.address().port);
 });
 
 
@@ -79,8 +83,8 @@ function channelMapPage(req, res) {
 }
 
 function timeStr(timestamp) {
-  var date = new Date(timestamp * 1000);
-  return date.toString();
+    var date = new Date(timestamp * 1000);
+    return date.toString();
 }
 
 function recordPage(req, res) {
@@ -98,15 +102,23 @@ function recordPage(req, res) {
             res.write('<div>');
             res.write('<div><label>Recording Name</label><input type="text" id="name" name="name"/></div>');
             res.write('<div><label>Channel</label><select id="channel" name="channel">');
-            Object.keys(channelNameToIndex).forEach((v)=> {
+            Object.keys(channelNameToIndex).forEach((v) => {
                 res.write(`<option value=${channelNameToIndex[v]}>${v}</option>`);
             });
             res.write('</select></div>');
-            res.write('<div><label>Start Time</label><input type="datetime" name="start"/></div>');
-            res.write('<div><label>Length</label><input type="datetime" name="length" /> minutes</div>');
+            res.write('<div><label>Start Time</label><input id="starttime" name="starttime" type="text"></div>');
+            res.write('<div><label>Length</label><select id="length" name="length">');
+            for (var i = 30; i < 181; i += 30) {
+                res.write(`<option value=${i}>${i}</option>`);
+            }
+            res.write('</select></div>')
             res.write('<div><button type="submit">Record</button></div>')
             res.write('</div></form></body>');
-            res.end();            
+            res.write('<link rel="stylesheet" type="text/css" href="/datetimepicker/jquery.datetimepicker.css"/ >' +
+                '<script src="/jquery/jquery-2.2.0.min.js"></script>' +
+                '<script src="/datetimepicker/jquery.datetimepicker.full.min.js"></script>');
+            res.write('<script src="/tv_web/record.js"></script>');
+            res.end();
         });
     });
 }
