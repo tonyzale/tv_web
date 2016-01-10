@@ -29,10 +29,10 @@ app.get('/', (req, res) => {
 });
 
 app.get('/channels', channelMapPage);
-app.get('/record', recordPage)
+app.get('/record', recordPage);
 app.post('/record', (req, res) => {
    console.log(req.body);
-   res.end();
+   res.redirect('/record');
 });
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
