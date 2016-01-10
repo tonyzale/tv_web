@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 const port = 1337;
-const dbPath = './me-tv.db';
+const dbPath = process.argv.slice(2).join('');
 
 
 var channelNameToIndex = {};
