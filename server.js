@@ -40,8 +40,9 @@ app.post('/record', (req, res) => {
     db.serialize(() => {
        db.run(`INSERT INTO scheduled_recording (description, recurring_type, action_after, channel_id, start_time, duration, device) VALUES ("${req.body['name']}", 0, 0, ${req.body['channel']}, ${Date.parse(req.body['starttime']) / 1000 - 90}, ${req.body['length'] * 60 + 300},"/dev/dvb/adapter0/frontend0");`);
     });
-    db.close();
-    res.redirect('/record');
+    db.close(() => {
+        res.redirect('/record');
+    });
 });
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
