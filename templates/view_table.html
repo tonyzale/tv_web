@@ -3,13 +3,13 @@
 <body>
     <table>
         <tr>
-            {% for c in columns() %}
+            {% for c in columns %}
             <th>{{ c }}</th>
             {% endfor %}
         </tr>
         {% for r in rows %}
         <tr>
-            {% for c in columns() %}
+            {% for c in columns %}
             <td>{{r[c]}}</td>
             {% endfor %}
         </tr>

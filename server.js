@@ -47,13 +47,12 @@ app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
     var db = new sqlite3.Database(dbPath);
     var rows = [];
-    var columns = [];
     db.serialize(() => {
         db.each(`SELECT * FROM ${name}`, (err, row) => {
             rows.push(row);
         });
         db.close(() => {
-            res.render('view_table', {columns: function() { return Object.keys(rows[0] || []); }, rows: rows});
+            res.render('view_table', {columns: Object.keys(rows[0] || []), rows: rows});
         });
     });
 });
