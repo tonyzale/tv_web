@@ -3,6 +3,7 @@ const sqlite3 = require('sqlite3');
 const express = require('express');
 const bodyParser = require('body-parser');
 const swig = require('swig');
+const fs = require('fs');
 var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
 app.engine('html', swig.renderFile);
@@ -54,6 +55,11 @@ app.get('/viewtable', (req, res) => {
         db.close(() => {
             res.render('view_table', {columns: Object.keys(rows[0] || []), rows: rows});
         });
+    });
+});
+app.get('/recordings', (req, res) => {
+    fs.readdir('/home/tonyzale/Videos/TV', (err, files) => {
+       res.render('recordings', {files: files}); 
     });
 });
 
