@@ -1,0 +1,14 @@
+<html>
+
+<body>
+    <table>
+        {% for channel in channels %}
+        <tr>
+            <td>{{ channel.name }}</td>
+            <td>{{ channel.id }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</body>
+
+</html>

@@ -2,20 +2,24 @@ const http = require('http');
 const sqlite3 = require('sqlite3');
 const express = require('express');
 const bodyParser = require('body-parser');
+const swig = require('swig');
 var app = express();
 app.use(bodyParser.urlencoded({ extended: false }));
+app.engine('html', swig.renderFile);
+app.set('view engine', 'html');
+app.set('views', __dirname + '/templates');
+
 const port = 1337;
 const dbPath = process.argv.slice(2).join('');
 
-
-var channelNameToIndex = {};
 var channelIndexToName = {};
+var channels = [];
 
 var db = new sqlite3.Database(dbPath);
 db.serialize(function () {
     db.each('SELECT channel_id, name FROM channel', (err, row) => {
-        channelNameToIndex[row.name] = row.channel_id;
         channelIndexToName[row.channel_id] = row.name;
+        channels.push({name: row.name, id: row.channel_id});
     });
     db.close();
 });
@@ -23,12 +27,7 @@ db.serialize(function () {
 app.use(express.static('static'));
 
 app.get('/', (req, res) => {
-    res.write('<body>');
-    res.write('<div><a href="/record">record</a></div>');
-    res.write('<div><a href="/channels">channels</a></div>');
-    res.write('<div><a href="/viewtable">view table</a></div>');
-    res.write('</body>');
-    res.end();
+    res.render('index');
 });
 
 app.get('/channels', channelMapPage);
@@ -47,29 +46,14 @@ app.post('/record', (req, res) => {
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
     var db = new sqlite3.Database(dbPath);
+    var rows = [];
+    var columns = [];
     db.serialize(() => {
-        var first = true;
-        var columns = [];
         db.each(`SELECT * FROM ${name}`, (err, row) => {
-            if (err) {
-                console.log('Error: %s', err);
-                res.status(400);
-                return;
-            }
-            if (first) {
-                columns = Object.keys(row);
-                res.write('<body><table><tr>');
-                columns.forEach((v) => { res.write(`<th>${v}</th>`) });
-                res.write('</tr>');
-                first = false;
-            }
-            res.write('<tr>');
-            columns.forEach((v) => { res.write(`<td>${row[v]}</td>`) });
-            res.write('</tr>');
+            rows.push(row);
         });
         db.close(() => {
-            res.write('</table></body>');
-            res.end();
+            res.render('view_table', {columns: function() { return Object.keys(rows[0] || []); }, rows: rows});
         });
     });
 });
@@ -80,12 +64,7 @@ var server = app.listen(port, function () {
 
 
 function channelMapPage(req, res) {
-    res.write("<body><table>");
-    for (var name in channelNameToIndex) {
-        res.write(`<tr><td>${name}</td><td>${channelNameToIndex[name]}</td></tr>`);
-    }
-    res.write("</table></body>");
-    res.end();
+    res.render('channel_map', {channels: channels});
 }
 
 function timeStr(timestamp) {
@@ -94,37 +73,14 @@ function timeStr(timestamp) {
 }
 
 function recordPage(req, res) {
-    res.write("<body><table><tr><th>Name</th><th>Channel</th><th>Start Time</th><th>End Time</th></tr>");
+    var rows = [];
     var db = new sqlite3.Database(dbPath);
     db.serialize(function () {
         db.each('SELECT description,channel_id,start_time,duration FROM scheduled_recording', (err, row) => {
-            var startTime = timeStr(row.start_time);
-            var endTime = timeStr(row.start_time + row.duration);
-            res.write(`<tr><td>${row.description}</td><td>${channelIndexToName[row.channel_id]}</td><td>${startTime}</td><td>${endTime}</td></tr>`);
+            rows.push({description: row.description, channel_id: row.channel_id, startTime: timeStr(row.start_time), endTime: timeStr(row.start_time + row.duration)});
         });
         db.close(() => {
-            res.write('</table>');
-            res.write('<form action="/record" method="post">');
-            res.write('<div>');
-            res.write('<div><label>Recording Name</label><input type="text" id="name" name="name"/></div>');
-            res.write('<div><label>Channel</label><select id="channel" name="channel">');
-            Object.keys(channelNameToIndex).forEach((v) => {
-                res.write(`<option value=${channelNameToIndex[v]}>${v}</option>`);
-            });
-            res.write('</select></div>');
-            res.write('<div><label>Start Time</label><input id="starttime" name="starttime" type="text"></div>');
-            res.write('<div><label>Length</label><select id="length" name="length">');
-            for (var i = 30; i < 181; i += 30) {
-                res.write(`<option value=${i}>${i}</option>`);
-            }
-            res.write('</select></div>')
-            res.write('<div><button type="submit">Record</button></div>')
-            res.write('</div></form></body>');
-            res.write('<link rel="stylesheet" type="text/css" href="/datetimepicker/jquery.datetimepicker.css"/ >' +
-                '<script src="/jquery/jquery-2.2.0.min.js"></script>' +
-                '<script src="/datetimepicker/jquery.datetimepicker.full.min.js"></script>');
-            res.write('<script src="/tv_web/record.js"></script>');
-            res.end();
+            res.render('record', {rows: rows, channelIndexToName: channelIndexToName, channels: channels});
         });
     });
 }

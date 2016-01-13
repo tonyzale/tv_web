@@ -1,0 +1,60 @@
+<html>
+
+<body>
+    <table>
+        <tr>
+            <th>Name</th>
+            <th>Channel</th>
+            <th>Start Time</th>
+            <th>End Time</th>
+        </tr>
+        {% for row in rows %}
+        <tr>
+            <td>{{ row.description }}</td>
+            <td>{{ channelIndexToName[row.channel_id] }}</td>
+            <td>{{ row.startTime }}</td>
+            <td>{{ row.endTime }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <form action="/record" method="POST">
+        <div>
+            <div>
+                <label>Recording Name</label>
+                <input type="text" id="name" name="name" />
+            </div>
+            <div>
+                <label>Channel</label>
+                <select id="channel" name="channel">
+                    {% for channel in channels %}
+                    <option value={{ channel.id }}>{{ channel.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label>Start Time</label>
+                <input id="starttime" name="starttime" type="text">
+            </div>
+            <div>
+                <label>Length</label>
+                <select id="length" name="length">
+                    <option value=30>30 min</option>
+                    <option value=60>60 min</option>
+                    <option value=90>90 min</option>
+                    <option value=120>120 min</option>
+                    <option value=150>150 min</option>
+                    <option value=180>180 min</option>
+                </select>
+            </div>
+            <div>
+                <button type="submit">Record</button>
+            </div>
+        </div>
+    </form>
+</body>
+<link rel="stylesheet" type="text/css" href="/datetimepicker/jquery.datetimepicker.css" />
+<script src="/jquery/jquery-2.2.0.min.js"></script>
+<script src="/datetimepicker/jquery.datetimepicker.full.min.js"></script>
+<script src="/tv_web/record.js"></script>
+
+</html>
