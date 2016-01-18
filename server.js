@@ -44,6 +44,13 @@ app.post('/record', (req, res) => {
         res.redirect('/record');
     });
 });
+app.post('/record_ttv', (req, res) => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    console.log(req.body);
+    res.write("hi from record_ttv");
+    res.end();
+});
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
     var db = new sqlite3.Database(dbPath);
