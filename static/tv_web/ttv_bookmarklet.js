@@ -5,7 +5,7 @@
         function() {
             var title = $("#title").text();
             $.ajax({
-                url: "http://67.167.224.185:1337record_ttv",
+                url: "http://67.167.224.185:1337/record_ttv",
                 method: "POST",
                 type: "POST",
                 crossDomain: true,
