@@ -78,10 +78,7 @@ function getDateFromTtvDate(date_str) {
         minutes += hr_split[0] * 60;
         len_str = hr_split[1];
     }
-    console.log('minutes after hours: ' + minutes);
-    console.log('len_str: ' + len_str);
     minutes += parseInt(len_str.replace(/\D/g, ''), 10);
-    console.log('minutes after minutes: ' + minutes);
     ret['length'] = minutes * 60;
     
     // Calc starttime
