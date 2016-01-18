@@ -16,14 +16,17 @@ const dbPath = process.argv.slice(2).join('');
 var channelIndexToName = {};
 var channels = [];
 
-var db = new sqlite3.Database(dbPath);
-db.serialize(function () {
-    db.each('SELECT channel_id, name FROM channel', (err, row) => {
-        channelIndexToName[row.channel_id] = row.name;
-        channels.push({name: row.name, id: row.channel_id});
+function setupChannelMaps() {
+    var db = new sqlite3.Database(dbPath);
+    db.serialize(function () {
+        db.each('SELECT channel_id, name FROM channel', (err, row) => {
+            channelIndexToName[row.channel_id] = row.name;
+            channels.push({name: row.name, id: row.channel_id});
+        });
+        db.close();
     });
-    db.close();
-});
+};
+setupChannelMaps();
 
 app.use(express.static('static'));
 
@@ -35,22 +38,73 @@ app.get('/channels', channelMapPage);
 app.get('/record', recordPage);
 app.post('/record', (req, res) => {
     console.log(req.body);
-    console.log();
-    var db = new sqlite3.Database(dbPath);
-    db.serialize(() => {
-       db.run(`INSERT INTO scheduled_recording (description, recurring_type, action_after, channel_id, start_time, duration, device) VALUES ("${req.body['name']}", 0, 0, ${req.body['channel']}, ${Date.parse(req.body['starttime']) / 1000 - 90}, ${req.body['length'] * 60 + 300},"/dev/dvb/adapter0/frontend0");`);
-    });
-    db.close(() => {
+    record(req.body['name'], req.body['channel'], Date.parse(req.body['starttime']) / 1000, req.body['length'] * 60, () => {
         res.redirect('/record');
     });
 });
+
+function record(name, channel_id, starttime_s, length_s, callback) {
+    console.log(`record: ${name}, ${channel_id}, ${starttime_s}, ${length_s}`);
+    var db = new sqlite3.Database(dbPath);
+    const pre_record_length = 90;
+    const post_record_length = 300;
+    db.serialize(() => {
+       db.run(`INSERT INTO scheduled_recording (description, recurring_type, action_after, channel_id, start_time, duration, device) VALUES ("${name}", 0, 0, ${channel_id}, ${starttime_s - pre_record_length}, ${length_s + post_record_length}, "/dev/dvb/adapter0/frontend0");`);
+    });
+    db.close(callback);
+}
+
+function getChannelIdFromTtvChannel(channel_str) {
+    var split_str = channel_str.split('-');
+    var c = split_str[split_str.length - 1].trim().replace('.', '-');
+    for (var i = 0; i < channels.length; ++i) {
+        var entry = channels[i];
+        if (entry.name.search(c) >= 0) {
+            return entry.id + "";
+        }
+    }
+    throw 'No channel for str: ' + channel_str;
+}
+
+function getDateFromTtvDate(date_str) {
+    var ret = {};
+    
+    // Calc length
+    var len_loc = date_str.search('(A|P)M') + 3;
+    var len_str = date_str.substr(len_loc);
+    var hr_split = len_str.split('hr');
+    var minutes = 0;
+    if (hr_split.length > 1) {
+        minutes += hr_split[0] * 60;
+        len_str = hr_split[1];
+    }
+    console.log('minutes after hours: ' + minutes);
+    console.log('len_str: ' + len_str);
+    minutes += parseInt(len_str.replace(/\D/g, ''), 10);
+    console.log('minutes after minutes: ' + minutes);
+    ret['length'] = minutes * 60;
+    
+    // Calc starttime
+    date_str = date_str.substring(0, len_loc);
+    var split_str = date_str.split(',');
+    // TODO: get year properly
+    var d = '2016/' + split_str[1].trim() + ', ' + split_str[2];
+    ret['starttime'] = Date.parse(d) / 1000;
+    return ret;
+}
+
 app.post('/record_ttv', (req, res) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
+
     console.log(req.body);
-    res.write("hi from record_ttv");
-    res.end();
+    var date_length = getDateFromTtvDate(req.body['time']);  
+    record(req.body['title'], getChannelIdFromTtvChannel(req.body['channel']), date_length['starttime'], date_length['length'], ()=> {
+        res.write(`Recording ${req.body}`);
+        res.end();
+    })
 });
+
 app.get('/viewtable', (req, res) => {
     const name = req.query.name || 'scheduled_recording';
     var db = new sqlite3.Database(dbPath);
