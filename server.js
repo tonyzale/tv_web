@@ -78,7 +78,10 @@ function getDateFromTtvDate(date_str) {
         minutes += hr_split[0] * 60;
         len_str = hr_split[1];
     }
-    minutes += parseInt(len_str.replace(/\D/g, ''), 10);
+    var parsedMinutes = parseInt(len_str.replace(/\D/g, ''), 10);
+    if (!isNaN(parsedMinutes)) {
+        minutes += parsedMinutes;
+    }
     ret['length'] = minutes * 60;
     
     // Calc starttime
@@ -95,11 +98,15 @@ app.post('/record_ttv', (req, res) => {
     res.header("Access-Control-Allow-Headers", "X-Requested-With");
 
     console.log(req.body);
-    var date_length = getDateFromTtvDate(req.body['time']);  
-    record(req.body['title'], getChannelIdFromTtvChannel(req.body['channel']), date_length['starttime'], date_length['length'], ()=> {
-        res.write(`Recording ${req.body}`);
-        res.end();
-    })
+    var date_length = getDateFromTtvDate(req.body['time']);
+    try {
+        record(req.body['title'], getChannelIdFromTtvChannel(req.body['channel']), date_length['starttime'], date_length['length'], ()=> {
+            res.write(`Recording ${req.body}`);
+            res.end();
+        });
+    } catch (e) {
+        console.log("/record_ttv exception:" + e.message);
+    }
 });
 
 app.get('/viewtable', (req, res) => {
